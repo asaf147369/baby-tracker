@@ -27,3 +27,79 @@ input {
   background: #0f0f1a;
   color: #eee;
 }
+
+.entry-form-card {
+  margin-block-start: 20px;
+  padding: 20px;
+  background: #252540;
+  border-radius: 12px;
+  border: 1px solid #3a3a5c;
+}
+.entry-form-card .entry-form-input {
+  width: 100%;
+  padding: 12px;
+  margin-block-end: 12px;
+}
+.entry-form-card .entry-form-group {
+  margin-block-end: 16px;
+}
+.entry-form-card .entry-form-label {
+  margin-inline-end: 16px;
+}
+.entry-form-time-label {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  color: #eee;
+}
+.entry-form-radio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-block-end: 8px;
+  color: #eee;
+  cursor: pointer;
+}
+.entry-form-radio span {
+  color: #eee;
+}
+.entry-form-datetime {
+  margin-block-start: 12px;
+}
+.entry-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-block-start: 16px;
+}
+.section-card {
+  background: #252540;
+  border-radius: 12px;
+  border: 1px solid #3a3a5c;
+  padding: 20px;
+  margin-block-end: 20px;
+}
+.section-card h2 {
+  font-size: 1.1rem;
+  margin: 0 0 12px 0;
+  color: #eee;
+}
+.entry-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-block-end: 1px solid #3a3a5c;
+}
+.entry-row:last-child {
+  border-block-end: none;
+}
+.btn-delete {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  background: #5c2a2a;
+  color: #eeb;
+  border-color: #7a3a3a;
+}
+.btn-delete:hover {
+  background: #7a3a3a;
+}

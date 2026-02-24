@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import {
   collection,
   addDoc,
+  doc,
+  deleteDoc,
   query,
   orderBy,
   onSnapshot,
@@ -90,14 +92,63 @@ export function useSleepSummary(): SleepSummary {
   return { isSleepingNow, sleepStart, lastNapEnd, lastNapStart, lastNapDurationMinutes }
 }
 
+const VITAMIN_D_LABEL = 'ויטמין D'
+
+function isToday(d: Date): boolean {
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+}
+
+export function useMedicineGivenToday(medicineLabel?: string): { given: boolean; time: Date | null } {
+  const entries = useEntries({ max: 100 })
+  const label = medicineLabel ?? VITAMIN_D_LABEL
+  const medicineEntries = entries.filter((e) => e.type === 'medicine' && (e.amount === label || !e.amount))
+  const todayEntry = medicineEntries.find((e) => isToday(e.timestamp))
+  return {
+    given: !!todayEntry,
+    time: todayEntry?.timestamp ?? null,
+  }
+}
+
+export interface TodaySummary {
+  feeds: number
+  naps: number
+  totalSleepMinutes: number
+}
+
+export function useTodaySummary(): TodaySummary {
+  const entries = useEntries({ max: 300 })
+  const todayEntries = entries.filter((e) => isToday(e.timestamp))
+  const feeds = todayEntries.filter((e) => e.type === 'food').length
+  const sleepEntries = todayEntries
+    .filter((e) => e.type === 'sleep_start' || e.type === 'sleep_end')
+    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+  let naps = 0
+  let totalSleepMinutes = 0
+  for (let i = 0; i < sleepEntries.length - 1; i++) {
+    if (sleepEntries[i].type === 'sleep_start' && sleepEntries[i + 1].type === 'sleep_end') {
+      naps += 1
+      totalSleepMinutes += Math.round(
+        (sleepEntries[i + 1].timestamp.getTime() - sleepEntries[i].timestamp.getTime()) / 60000
+      )
+    }
+  }
+  return { feeds, naps, totalSleepMinutes }
+}
+
 export async function addEntry(type: EntryType, amount?: string, timestamp?: Date): Promise<void> {
   const uid = auth.currentUser?.uid
   if (!uid) throw new Error('Not authenticated')
-  const doc: Omit<EntryDoc, 'timestamp'> & { timestamp: Timestamp } = {
+  const data: Omit<EntryDoc, 'timestamp'> & { timestamp: Timestamp } = {
     type,
     userId: uid,
     timestamp: Timestamp.fromDate(timestamp ?? new Date()),
   }
-  if (amount !== undefined && amount !== '') doc.amount = amount
-  await addDoc(collection(db, COLLECTION), doc)
+  if (amount !== undefined && amount !== '') data.amount = amount
+  await addDoc(collection(db, COLLECTION), data)
+}
+
+export async function deleteEntry(id: string): Promise<void> {
+  if (!auth.currentUser) throw new Error('Not authenticated')
+  await deleteDoc(doc(db, COLLECTION, id))
 }

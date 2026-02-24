@@ -1,6 +1,6 @@
 import type { Timestamp } from 'firebase/firestore'
 
-export type EntryType = 'food' | 'poop' | 'pee' | 'sleep_start' | 'sleep_end'
+export type EntryType = 'food' | 'poop' | 'pee' | 'sleep_start' | 'sleep_end' | 'medicine'
 
 export type PoopAmount = 'small' | 'medium' | 'large'
 

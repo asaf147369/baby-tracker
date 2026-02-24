@@ -7,9 +7,20 @@ const POOP_LABELS: Record<PoopAmount, string> = { small: 'קטן', medium: 'בי
 
 type Props = { type: EntryType; onDone: () => void }
 
+function toDatetimeLocal(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const h = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${day}T${h}:${min}`
+}
+
 export function EntryForm({ type, onDone }: Props) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
+  const [useNow, setUseNow] = useState(true)
+  const [pickedDateTime, setPickedDateTime] = useState(() => toDatetimeLocal(new Date()))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -18,7 +29,8 @@ export function EntryForm({ type, onDone }: Props) {
       let value: string | undefined = amount.trim() || undefined
       if (type === 'pee') value = 'logged'
       if (type === 'sleep_start' || type === 'sleep_end') value = undefined
-      await addEntry(type, value)
+      const timestamp = useNow ? undefined : new Date(pickedDateTime)
+      await addEntry(type, value, timestamp)
       onDone()
     } finally {
       setLoading(false)
@@ -26,37 +38,50 @@ export function EntryForm({ type, onDone }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginBlockStart: 16, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
+    <form onSubmit={handleSubmit} className="entry-form-card">
       {type === 'food' && (
         <input
           type="text"
           placeholder="כמות (למשל 120 מ״ל)"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          style={{ width: '100%', padding: 8, marginBlockEnd: 8 }}
+          className="entry-form-input"
         />
       )}
       {type === 'poop' && (
-        <div style={{ marginBlockEnd: 8 }}>
+        <div className="entry-form-group">
           {POOP_OPTIONS.map((opt) => (
-            <label key={opt} style={{ marginInlineEnd: 12 }}>
-              <input
-                type="radio"
-                name="poop"
-                value={opt}
-                checked={amount === opt}
-                onChange={() => setAmount(opt)}
-              />
+            <label key={opt} className="entry-form-label">
+              <input type="radio" name="poop" value={opt} checked={amount === opt} onChange={() => setAmount(opt)} />
               {' '}{POOP_LABELS[opt]}
             </label>
           ))}
         </div>
       )}
-      {type === 'pee' && <p style={{ marginBlockEnd: 8 }}>נרשם שתן</p>}
+      {type === 'pee' && <p className="entry-form-group">נרשם שתן</p>}
       {(type === 'sleep_start' || type === 'sleep_end') && (
-        <p style={{ marginBlockEnd: 8 }}>{type === 'sleep_start' ? 'נרדמה' : 'התעוררה'}</p>
+        <p className="entry-form-group">{type === 'sleep_start' ? 'נרדמה' : 'התעוררה'}</p>
       )}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="entry-form-group">
+        <p className="entry-form-time-label">מתי קרה?</p>
+        <label className="entry-form-radio">
+          <input type="radio" checked={useNow} onChange={() => setUseNow(true)} />
+          <span>קרה עכשיו</span>
+        </label>
+        <label className="entry-form-radio">
+          <input type="radio" checked={!useNow} onChange={() => setUseNow(false)} />
+          <span>קרה קודם</span>
+        </label>
+        {!useNow && (
+          <input
+            type="datetime-local"
+            value={pickedDateTime}
+            onChange={(e) => setPickedDateTime(e.target.value)}
+            className="entry-form-input entry-form-datetime"
+          />
+        )}
+      </div>
+      <div className="entry-form-actions">
         <button type="submit" disabled={loading}>שמור</button>
         <button type="button" onClick={onDone}>ביטול</button>
       </div>

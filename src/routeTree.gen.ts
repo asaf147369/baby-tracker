@@ -3,10 +3,12 @@ import { loginRoute } from './routes/login'
 import { authenticatedRoute } from './routes/_authenticated'
 import { indexRoute } from './routes/_authenticated/index'
 import { historyRoute } from './routes/_authenticated/history'
+import { sleepChartRoute } from './routes/_authenticated/sleep-chart'
 
 const authenticatedRouteWithChildren = authenticatedRoute.addChildren([
   indexRoute,
   historyRoute,
+  sleepChartRoute,
 ])
 
 export const routeTree = rootRoute.addChildren([
