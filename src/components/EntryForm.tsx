@@ -17,6 +17,7 @@ export function EntryForm({ type, onDone }: Props) {
     try {
       let value: string | undefined = amount.trim() || undefined
       if (type === 'pee') value = 'logged'
+      if (type === 'sleep_start' || type === 'sleep_end') value = undefined
       await addEntry(type, value)
       onDone()
     } finally {
@@ -52,6 +53,9 @@ export function EntryForm({ type, onDone }: Props) {
         </div>
       )}
       {type === 'pee' && <p style={{ marginBlockEnd: 8 }}>נרשם שתן</p>}
+      {(type === 'sleep_start' || type === 'sleep_end') && (
+        <p style={{ marginBlockEnd: 8 }}>{type === 'sleep_start' ? 'נרדמה' : 'התעוררה'}</p>
+      )}
       <div style={{ display: 'flex', gap: 8 }}>
         <button type="submit" disabled={loading}>שמור</button>
         <button type="button" onClick={onDone}>ביטול</button>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useEntries, useLastByType } from '../lib/entries'
+import { useEntries, useLastByType, useSleepSummary, addEntry } from '../lib/entries'
 import { EntryForm } from '../components/EntryForm'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
@@ -17,16 +17,37 @@ function formatTimeAgo(date: Date): string {
   return `לפני ${diffDays} ימים`
 }
 
+function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h === 0) return `${m} דקות`
+  if (m === 0) return `${h} שעות`
+  return `${h} שעות ו־${m} דקות`
+}
+
 const typeLabel: Record<string, string> = {
   food: 'אוכל',
   poop: 'צואה',
   pee: 'שתן',
+  sleep_start: 'נרדמה',
+  sleep_end: 'התעוררה',
 }
 
 export function HomePage() {
   const entries = useEntries()
   const last = useLastByType()
+  const sleep = useSleepSummary()
   const [showForm, setShowForm] = useState<string | null>(null)
+  const [sleepSaving, setSleepSaving] = useState<string | null>(null)
+
+  async function handleSleep(type: 'sleep_start' | 'sleep_end') {
+    setSleepSaving(type)
+    try {
+      await addEntry(type)
+    } finally {
+      setSleepSaving(null)
+    }
+  }
 
   return (
     <div style={{ padding: 24, paddingBlockEnd: 80 }}>
@@ -42,6 +63,34 @@ export function HomePage() {
           <li>אוכל: {last.food ? formatTimeAgo(last.food) : '—'}</li>
           <li>שתן: {last.pee ? formatTimeAgo(last.pee) : '—'}</li>
         </ul>
+      </section>
+
+      <section style={{ marginBlockEnd: 24 }}>
+        <h2 style={{ fontSize: '1rem', marginBlockEnd: 8 }}>שינה</h2>
+        {sleep.isSleepingNow && sleep.sleepStart && (
+          <p style={{ marginBlockEnd: 8 }}>
+            ישנה עכשיו מ־{sleep.sleepStart.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        )}
+        {sleep.lastNapDurationMinutes != null && !sleep.isSleepingNow && (
+          <p style={{ marginBlockEnd: 8 }}>שינה אחרונה: {formatDuration(sleep.lastNapDurationMinutes)}</p>
+        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => handleSleep('sleep_start')}
+            disabled={!!sleepSaving}
+          >
+            {sleepSaving === 'sleep_start' ? '...' : 'נרדמה'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSleep('sleep_end')}
+            disabled={!!sleepSaving}
+          >
+            {sleepSaving === 'sleep_end' ? '...' : 'התעוררה'}
+          </button>
+        </div>
       </section>
 
       <section style={{ marginBlockEnd: 24 }}>
@@ -72,7 +121,7 @@ export function HomePage() {
           <Link to="/history">היסטוריה</Link>
         </div>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {entries.slice(0, 10).map((e) => (
+          {entries.slice(0, 12).map((e) => (
             <li
               key={e.id}
               style={{
@@ -83,7 +132,7 @@ export function HomePage() {
                 gap: 8,
               }}
             >
-              <span>{typeLabel[e.type]}{e.amount ? ` – ${e.amount}` : ''}</span>
+              <span>{typeLabel[e.type] ?? e.type}{e.amount ? ` – ${e.amount}` : ''}</span>
               <span style={{ color: '#666' }}>
                 {e.timestamp.toLocaleDateString('he-IL')} {e.timestamp.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
               </span>

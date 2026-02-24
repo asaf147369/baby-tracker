@@ -25,14 +25,15 @@ function docToEntry(id: string, d: EntryDoc): Entry {
   }
 }
 
-export function useEntries(options?: { max?: number; type?: EntryType }) {
+export function useEntries(options?: { max?: number; type?: EntryType | EntryType[] }) {
   const [entries, setEntries] = useState<Entry[]>([])
 
   useEffect(() => {
+    const typeFilter = options?.type
     const q = query(
       collection(db, COLLECTION),
       orderBy('timestamp', 'desc'),
-      ...(options?.type ? [where('type', '==', options.type)] : []),
+      ...(typeFilter === undefined ? [] : Array.isArray(typeFilter) ? [where('type', 'in', typeFilter)] : [where('type', '==', typeFilter)]),
       ...(options?.max ? [limit(options.max)] : [])
     )
     const unsub: Unsubscribe = onSnapshot(q, (snap) => {
@@ -40,7 +41,7 @@ export function useEntries(options?: { max?: number; type?: EntryType }) {
       setEntries(list)
     })
     return () => unsub()
-  }, [options?.max, options?.type])
+  }, [options?.max, options?.type === undefined ? undefined : Array.isArray(options.type) ? options.type.join(',') : options.type])
 
   return entries
 }
@@ -55,6 +56,38 @@ export function useLastByType() {
     if (last.food && last.poop && last.pee) break
   }
   return last
+}
+
+export interface SleepSummary {
+  isSleepingNow: boolean
+  sleepStart: Date | null
+  lastNapEnd: Date | null
+  lastNapStart: Date | null
+  lastNapDurationMinutes: number | null
+}
+
+export function useSleepSummary(): SleepSummary {
+  const entries = useEntries({ max: 200 })
+  const sleepEntries = entries.filter((e) => e.type === 'sleep_start' || e.type === 'sleep_end')
+  const newest = sleepEntries[0]
+  const isSleepingNow = newest?.type === 'sleep_start'
+  const sleepStart = isSleepingNow ? newest.timestamp : null
+
+  let lastNapEnd: Date | null = null
+  let lastNapStart: Date | null = null
+  for (const e of sleepEntries) {
+    if (e.type === 'sleep_end' && !lastNapEnd) lastNapEnd = e.timestamp
+    if (e.type === 'sleep_start' && lastNapEnd && e.timestamp < lastNapEnd && !lastNapStart) {
+      lastNapStart = e.timestamp
+      break
+    }
+  }
+  const lastNapDurationMinutes =
+    lastNapStart && lastNapEnd
+      ? Math.round((lastNapEnd.getTime() - lastNapStart.getTime()) / 60000)
+      : null
+
+  return { isSleepingNow, sleepStart, lastNapEnd, lastNapStart, lastNapDurationMinutes }
 }
 
 export async function addEntry(type: EntryType, amount?: string, timestamp?: Date): Promise<void> {
