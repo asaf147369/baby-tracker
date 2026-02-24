@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { format, parseISO } from "date-fns";
 import { addEntry } from "../lib/entries";
 import type { PoopAmount } from "../types/entry";
 import { Button } from "./Button";
@@ -11,12 +12,7 @@ const POOP_LABELS: Record<PoopAmount, string> = {
 };
 
 function toDatetimeLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const h = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${day}T${h}:${min}`;
+  return format(d, "yyyy-MM-dd'T'HH:mm");
 }
 
 type Props = { onDone: () => void };
@@ -33,7 +29,7 @@ export function PeePooForm({ onDone }: Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const timestamp = useNow ? undefined : new Date(pickedDateTime);
+      const timestamp = useNow ? undefined : parseISO(pickedDateTime);
       await addEntry("pee", "logged", timestamp);
       await addEntry("poop", poopAmount, timestamp);
       onDone();

@@ -14,6 +14,7 @@ import {
   type Unsubscribe,
   type UpdateData,
 } from 'firebase/firestore'
+import { isToday as isTodayDate } from 'date-fns'
 import { db, auth } from './firebase'
 import type { Entry, EntryType, EntryDoc } from '../types/entry'
 
@@ -97,8 +98,7 @@ export function useSleepSummary(): SleepSummary {
 const VITAMIN_D_LABEL = 'ויטמין D'
 
 function isToday(d: Date): boolean {
-  const now = new Date()
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+  return isTodayDate(d)
 }
 
 export function useMedicineGivenToday(medicineLabel?: string): { given: boolean; time: Date | null } {

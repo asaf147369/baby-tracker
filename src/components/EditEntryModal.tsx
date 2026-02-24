@@ -1,15 +1,11 @@
 import { useState, useEffect } from "react";
+import { format, parseISO } from "date-fns";
 import { updateEntry } from "../lib/entries";
 import type { Entry, EntryType } from "../types/entry";
 import { Button } from "./Button";
 
 function toDatetimeLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const h = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${day}T${h}:${min}`;
+  return format(d, "yyyy-MM-dd'T'HH:mm");
 }
 
 type Props = { entry: Entry; onClose: () => void; onSaved: () => void };
@@ -35,7 +31,7 @@ export function EditEntryModal({ entry, onClose, onSaved }: Props) {
     setSaving(true);
     try {
       await updateEntry(entry.id, {
-        timestamp: new Date(timestamp),
+        timestamp: parseISO(timestamp),
         ...(canEditAmount && { amount: amount.trim() || undefined }),
       });
       onSaved();
