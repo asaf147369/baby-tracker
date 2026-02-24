@@ -1,6 +1,7 @@
 import { createRoute, Outlet, redirect } from '@tanstack/react-router'
 import { rootRoute } from './__root'
 import { auth } from '../lib/firebase'
+import { BottomNav } from '../components/BottomNav'
 
 export const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -11,5 +12,10 @@ export const authenticatedRoute = createRoute({
       throw redirect({ to: '/login' })
     }
   },
-  component: () => <Outlet />,
+  component: () => (
+    <>
+      <Outlet />
+      <BottomNav />
+    </>
+  ),
 })

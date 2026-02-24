@@ -103,3 +103,71 @@ input {
 .btn-delete:hover {
   background: #7a3a3a;
 }
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-block-end: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #3a3a5c;
+}
+.tab-bar button {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 0;
+  background: #252540;
+  color: #aaa;
+}
+.tab-bar button.tab-active {
+  background: #3a3a5c;
+  color: #eee;
+  font-weight: 600;
+}
+.tab-bar button:not(.tab-active):hover {
+  background: #2a2a45;
+  color: #eee;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  background: #252540;
+  border: 1px solid #3a3a5c;
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  padding: 10px 8px 10px 8px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+.bottom-nav .bottom-nav-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  border-radius: 12px;
+  color: #aaa;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: background 0.15s, color 0.15s;
+}
+.bottom-nav .bottom-nav-item:hover {
+  background: #2a2a45;
+  color: #eee;
+}
+.bottom-nav .bottom-nav-item-active {
+  background: #3a3a5c;
+  color: #eee;
+  font-weight: 600;
+}
+.bottom-nav .bottom-nav-label {
+  color: inherit;
+}

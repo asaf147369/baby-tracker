@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from '@tanstack/react-router'
+import { useSearch } from '@tanstack/react-router'
 import { useEntries, useLastByType, useSleepSummary, useMedicineGivenToday, useTodaySummary, addEntry, deleteEntry } from '../lib/entries'
 import { useReminderAlerts, getReminderThresholds, setReminderThresholds, requestNotificationPermission, sendReminderNotification } from '../lib/reminders'
 import { EntryForm } from '../components/EntryForm'
@@ -46,6 +46,8 @@ export function HomePage() {
   const [showForm, setShowForm] = useState<string | null>(null)
   const [medicineSaving, setMedicineSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const search = useSearch({ strict: false }) as { tab?: string }
+  const tab = search?.tab === 'info' ? 'info' : 'add'
   const [showReminderSettings, setShowReminderSettings] = useState(false)
   const [reminderFoodHours, setReminderFoodHours] = useState(() => getReminderThresholds().foodHours)
   const [reminderPoopHours, setReminderPoopHours] = useState(() => getReminderThresholds().poopHours)
@@ -101,153 +103,176 @@ export function HomePage() {
 
   return (
     <div style={{ padding: 20, paddingBlockEnd: 100, maxWidth: 480, margin: '0 auto' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBlockEnd: 28 }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBlockEnd: 16 }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>מעקב תינוק</h1>
         <button type="button" onClick={() => signOut(auth)}>יציאה</button>
       </header>
 
-      <section className="section-card">
-        <h2>ויטמין D</h2>
-        {vitaminD.given ? (
-          <p style={{ margin: 0 }}>
-            ניתנה היום {vitaminD.time ? vitaminD.time.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : ''}
-          </p>
-        ) : (
-          <>
-            <p style={{ margin: '0 0 12px 0' }}>עדיין לא ניתנה היום</p>
-            <button type="button" onClick={handleVitaminD} disabled={medicineSaving}>
-              {medicineSaving ? '...' : 'נתתי'}
-            </button>
-          </>
-        )}
-      </section>
+      {tab === 'add' && (
+        <>
+          {!vitaminD.given && (
+            <section className="section-card">
+              <h2>ויטמין D</h2>
+              <p style={{ margin: '0 0 12px 0' }}>עדיין לא ניתנה היום</p>
+              <button type="button" onClick={handleVitaminD} disabled={medicineSaving}>
+                {medicineSaving ? '...' : 'נתתי'}
+              </button>
+            </section>
+          )}
 
-      {(reminders.foodAlert || reminders.poopAlert) && (
-        <section className="section-card" style={{ background: 'rgba(120,50,50,0.3)', borderColor: '#6a3a3a' }}>
-          <h2>תזכורת</h2>
-          {reminders.foodAlert && reminders.foodHoursAgo != null && (
-            <p style={{ margin: 0 }}>לא אכלה מעל {reminders.foodHoursAgo} שעות</p>
-          )}
-          {reminders.poopAlert && reminders.poopHoursAgo != null && (
-            <p style={{ margin: reminders.foodAlert ? '8px 0 0' : 0 }}>לא הייתה צואה מעל {reminders.poopHoursAgo} שעות</p>
-          )}
-        </section>
+          <section className="section-card">
+            <h2>שינה</h2>
+            <p style={{ margin: '0 0 12px 0', color: '#aaa', fontSize: '0.9rem' }}>בחר מתי קרה (אפשר עכשיו או קודם)</p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => setShowForm(showForm === 'sleep_start' ? null : 'sleep_start')}>
+                נרדמה
+              </button>
+              <button type="button" onClick={() => setShowForm(showForm === 'sleep_end' ? null : 'sleep_end')}>
+                התעוררה
+              </button>
+            </div>
+            {(formType === 'sleep_start' || formType === 'sleep_end') && (
+              <EntryForm type={formType} onDone={() => setShowForm(null)} />
+            )}
+          </section>
+
+          <section className="section-card">
+            <h2>אוכל, צואה, שתן</h2>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {(['food', 'poop', 'pee'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setShowForm(showForm === type ? null : type)}
+                  style={{ padding: '12px 16px' }}
+                >
+                  {typeLabel[type]}
+                </button>
+              ))}
+            </div>
+            {formType && formType !== 'sleep_start' && formType !== 'sleep_end' && (
+              <EntryForm type={formType} onDone={() => setShowForm(null)} />
+            )}
+          </section>
+
+          <section className="section-card">
+            <h2 style={{ marginBlockEnd: 8 }}>אחרונות</h2>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {entries.slice(0, 5).map((e: Entry) => (
+                <li key={e.id} className="entry-row">
+                  <span>{typeLabel[e.type] ?? e.type}{e.amount ? ` – ${e.amount}` : ''}</span>
+                  <span style={{ color: '#aaa', fontSize: '0.9rem' }}>
+                    {e.timestamp.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
       )}
 
-      <section className="section-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBlockEnd: showReminderSettings ? 12 : 0 }}>
-          <h2 style={{ margin: 0 }}>תזכורות</h2>
-          <span style={{ display: 'flex', gap: 8 }}>
-            <button type="button" onClick={() => setShowReminderSettings(!showReminderSettings)}>הגדרות</button>
-            <button type="button" onClick={() => requestNotificationPermission()}>התראות בדפדפן</button>
-          </span>
-        </div>
-        {showReminderSettings && (
-          <div style={{ marginBlockStart: 12 }}>
-            <label style={{ display: 'block', marginBlockEnd: 8 }}>
-              התראות אם לא אכלה מעל
-              <input type="number" min={1} max={24} value={reminderFoodHours} onChange={(e) => setReminderFoodHours(Number(e.target.value))} style={{ marginInlineStart: 8, width: 48 }} />
-              שעות
-            </label>
-            <label style={{ display: 'block', marginBlockEnd: 12 }}>
-              התראות אם לא הייתה צואה מעל
-              <input type="number" min={1} max={72} value={reminderPoopHours} onChange={(e) => setReminderPoopHours(Number(e.target.value))} style={{ marginInlineStart: 8, width: 48 }} />
-              שעות
-            </label>
-            <button type="button" onClick={saveReminderThresholds}>שמור</button>
-          </div>
-        )}
-      </section>
+      {tab === 'info' && (
+        <>
+          {vitaminD.given && (
+            <section className="section-card">
+              <h2>ויטמין D</h2>
+              <p style={{ margin: 0 }}>
+                ניתנה היום {vitaminD.time ? vitaminD.time.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : ''}
+              </p>
+            </section>
+          )}
 
-      <section className="section-card">
-        <h2>היום</h2>
-        <p style={{ margin: 0 }}>
-          {today.feeds} האכלות, {today.naps} תנומות, סה״כ שינה {formatDuration(today.totalSleepMinutes)}
-        </p>
-      </section>
+          {(reminders.foodAlert || reminders.poopAlert) && (
+            <section className="section-card" style={{ background: 'rgba(120,50,50,0.3)', borderColor: '#6a3a3a' }}>
+              <h2>תזכורת</h2>
+              {reminders.foodAlert && reminders.foodHoursAgo != null && (
+                <p style={{ margin: 0 }}>לא אכלה מעל {reminders.foodHoursAgo} שעות</p>
+              )}
+              {reminders.poopAlert && reminders.poopHoursAgo != null && (
+                <p style={{ margin: reminders.foodAlert ? '8px 0 0' : 0 }}>לא הייתה צואה מעל {reminders.poopHoursAgo} שעות</p>
+              )}
+            </section>
+          )}
 
-      <section className="section-card">
-        <h2>אחרון</h2>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          <li style={{ paddingBlock: 4 }}>צואה: {last.poop ? formatTimeAgo(last.poop) : '—'}</li>
-          <li style={{ paddingBlock: 4 }}>אוכל: {last.food ? formatTimeAgo(last.food) : '—'}</li>
-          <li style={{ paddingBlock: 4 }}>שתן: {last.pee ? formatTimeAgo(last.pee) : '—'}</li>
-        </ul>
-      </section>
+          <section className="section-card">
+            <h2>היום</h2>
+            <p style={{ margin: 0 }}>
+              {today.feeds} האכלות, {today.naps} תנומות, סה״כ שינה {formatDuration(today.totalSleepMinutes)}
+            </p>
+          </section>
 
-      <section className="section-card">
-        <h2>שינה</h2>
-        {sleep.isSleepingNow && sleep.sleepStart && (
-          <p style={{ margin: '0 0 12px 0' }}>
-            ישנה עכשיו מ־{sleep.sleepStart.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
-          </p>
-        )}
-        {sleep.lastNapDurationMinutes != null && !sleep.isSleepingNow && (
-          <p style={{ margin: '0 0 12px 0' }}>שינה אחרונה: {formatDuration(sleep.lastNapDurationMinutes)}</p>
-        )}
-        <p style={{ margin: '0 0 12px 0', color: '#aaa', fontSize: '0.9rem' }}>בחר מתי קרה (אפשר עכשיו או קודם)</p>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button type="button" onClick={() => setShowForm(showForm === 'sleep_start' ? null : 'sleep_start')}>
-            נרדמה
-          </button>
-          <button type="button" onClick={() => setShowForm(showForm === 'sleep_end' ? null : 'sleep_end')}>
-            התעוררה
-          </button>
-        </div>
-        {(formType === 'sleep_start' || formType === 'sleep_end') && (
-          <EntryForm type={formType} onDone={() => setShowForm(null)} />
-        )}
-      </section>
+          <section className="section-card">
+            <h2>אחרון</h2>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <li style={{ paddingBlock: 4 }}>צואה: {last.poop ? formatTimeAgo(last.poop) : '—'}</li>
+              <li style={{ paddingBlock: 4 }}>אוכל: {last.food ? formatTimeAgo(last.food) : '—'}</li>
+              <li style={{ paddingBlock: 4 }}>שתן: {last.pee ? formatTimeAgo(last.pee) : '—'}</li>
+            </ul>
+          </section>
 
-      <section className="section-card">
-        <h2>הוסף</h2>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          {(['food', 'poop', 'pee'] as const).map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => setShowForm(showForm === type ? null : type)}
-              style={{ padding: '12px 16px' }}
-            >
-              {typeLabel[type]}
-            </button>
-          ))}
-        </div>
-        {formType && formType !== 'sleep_start' && formType !== 'sleep_end' && (
-          <EntryForm type={formType} onDone={() => setShowForm(null)} />
-        )}
-      </section>
+          <section className="section-card">
+            <h2>שינה</h2>
+            {sleep.isSleepingNow && sleep.sleepStart && (
+              <p style={{ margin: 0 }}>
+                ישנה עכשיו מ־{sleep.sleepStart.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+            {sleep.lastNapDurationMinutes != null && !sleep.isSleepingNow && (
+              <p style={{ margin: 0 }}>שינה אחרונה: {formatDuration(sleep.lastNapDurationMinutes)}</p>
+            )}
+          </section>
 
-      <section className="section-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBlockEnd: 12 }}>
-          <h2 style={{ margin: 0 }}>רשומה אחרונה</h2>
-          <span style={{ display: 'flex', gap: 12 }}>
-            <Link to="/sleep-chart">גרף שינה</Link>
-            <Link to="/history">היסטוריה</Link>
-          </span>
-        </div>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {entries.slice(0, 12).map((e: Entry) => (
-            <li key={e.id} className="entry-row">
-              <span>{typeLabel[e.type] ?? e.type}{e.amount ? ` – ${e.amount}` : ''}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: '#aaa', fontSize: '0.9rem' }}>
-                  {e.timestamp.toLocaleDateString('he-IL')} {e.timestamp.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <button
-                  type="button"
-                  className="btn-delete"
-                  onClick={() => handleDelete(e.id)}
-                  disabled={deletingId === e.id}
-                  aria-label="מחק"
-                >
-                  {deletingId === e.id ? '...' : 'מחק'}
-                </button>
+          <section className="section-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBlockEnd: showReminderSettings ? 12 : 0 }}>
+              <h2 style={{ margin: 0 }}>תזכורות</h2>
+              <span style={{ display: 'flex', gap: 8 }}>
+                <button type="button" onClick={() => setShowReminderSettings(!showReminderSettings)}>הגדרות</button>
+                <button type="button" onClick={() => requestNotificationPermission()}>התראות בדפדפן</button>
               </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+            </div>
+            {showReminderSettings && (
+              <div style={{ marginBlockStart: 12 }}>
+                <label style={{ display: 'block', marginBlockEnd: 8 }}>
+                  התראות אם לא אכלה מעל
+                  <input type="number" min={1} max={24} value={reminderFoodHours} onChange={(e) => setReminderFoodHours(Number(e.target.value))} style={{ marginInlineStart: 8, width: 48 }} />
+                  שעות
+                </label>
+                <label style={{ display: 'block', marginBlockEnd: 12 }}>
+                  התראות אם לא הייתה צואה מעל
+                  <input type="number" min={1} max={72} value={reminderPoopHours} onChange={(e) => setReminderPoopHours(Number(e.target.value))} style={{ marginInlineStart: 8, width: 48 }} />
+                  שעות
+                </label>
+                <button type="button" onClick={saveReminderThresholds}>שמור</button>
+              </div>
+            )}
+          </section>
+
+          <section className="section-card">
+            <h2>רשומה אחרונה</h2>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {entries.slice(0, 12).map((e: Entry) => (
+                <li key={e.id} className="entry-row">
+                  <span>{typeLabel[e.type] ?? e.type}{e.amount ? ` – ${e.amount}` : ''}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: '#aaa', fontSize: '0.9rem' }}>
+                      {e.timestamp.toLocaleDateString('he-IL')} {e.timestamp.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-delete"
+                      onClick={() => handleDelete(e.id)}
+                      disabled={deletingId === e.id}
+                      aria-label="מחק"
+                    >
+                      {deletingId === e.id ? '...' : 'מחק'}
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      )}
     </div>
   )
 }
