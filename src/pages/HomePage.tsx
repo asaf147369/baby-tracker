@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch } from "@tanstack/react-router";
+import { format, differenceInMinutes, differenceInHours, differenceInDays } from "date-fns";
+import { he } from "date-fns/locale";
 import {
   useEntries,
   useLastByType,
@@ -25,10 +27,9 @@ import { auth } from "../lib/firebase";
 
 function formatTimeAgo(date: Date): string {
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
+  const diffMins = differenceInMinutes(now, date);
+  const diffHours = differenceInHours(now, date);
+  const diffDays = differenceInDays(now, date);
   if (diffMins < 1) return "עכשיו";
   if (diffMins < 60) return `לפני ${diffMins} דקות`;
   if (diffHours < 24) return `לפני ${diffHours} שעות`;
@@ -50,6 +51,7 @@ const typeLabel: Record<string, string> = {
   sleep_start: "נרדמה",
   sleep_end: "התעוררה",
   medicine: "תרופה",
+  shower: "מקלחת",
 };
 
 export function HomePage() {
@@ -133,6 +135,7 @@ export function HomePage() {
     | "sleep_start"
     | "sleep_end"
     | "pee_poop"
+    | "shower"
     | null;
 
   const card = "mb-5 rounded-xl border border-border bg-surface pb-3 ps-6 pe-5 pt-4";
@@ -185,9 +188,9 @@ export function HomePage() {
           </section>
 
           <section className={card}>
-            <h2 className={cardTitle}>אוכל, קקי, פיפי</h2>
+            <h2 className={cardTitle}>אוכל, קקי, פיפי, מקלחת</h2>
             <div className="flex flex-wrap gap-2">
-              {(["food", "poop", "pee"] as const).map((type) => (
+              {(["food", "poop", "pee", "shower"] as const).map((type) => (
                 <Button
                   key={type}
                   onClick={() => setShowForm(showForm === type ? null : type)}
@@ -224,10 +227,7 @@ export function HomePage() {
                     {e.amount ? ` – ${e.amount}` : ""}
                   </span>
                   <span className="text-sm text-muted">
-                    {e.timestamp.toLocaleTimeString("he-IL", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {format(e.timestamp, "HH:mm", { locale: he })}
                   </span>
                 </li>
               ))}
@@ -238,17 +238,12 @@ export function HomePage() {
 
       {tab === "info" && (
         <>
-          {vitaminD.given && (
+              {vitaminD.given && (
             <section className={card}>
               <h2 className={cardTitle}>ויטמין D</h2>
               <p className="m-0">
                 ניתנה היום{" "}
-                {vitaminD.time
-                  ? vitaminD.time.toLocaleTimeString("he-IL", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : ""}
+                {vitaminD.time ? format(vitaminD.time, "HH:mm", { locale: he }) : ""}
               </p>
             </section>
           )}
@@ -289,10 +284,7 @@ export function HomePage() {
             {sleep.isSleepingNow && sleep.sleepStart && (
               <p className="m-0">
                 ישנה עכשיו מ־
-                {sleep.sleepStart.toLocaleTimeString("he-IL", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {format(sleep.sleepStart, "HH:mm", { locale: he })}
               </p>
             )}
             {sleep.lastNapDurationMinutes != null && !sleep.isSleepingNow && (
@@ -361,11 +353,8 @@ export function HomePage() {
                   </span>
                   <span className="flex items-center gap-2">
                     <span className="text-sm text-muted">
-                      {e.timestamp.toLocaleDateString("he-IL")}{" "}
-                      {e.timestamp.toLocaleTimeString("he-IL", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {format(e.timestamp, "d.M.yyyy", { locale: he })}{" "}
+                      {format(e.timestamp, "HH:mm", { locale: he })}
                     </span>
                     <Button
                       variant="danger"

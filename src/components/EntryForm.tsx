@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { format, parseISO } from "date-fns";
 import { addEntry } from "../lib/entries";
 import type { EntryType, PoopAmount } from "../types/entry";
 import { Button } from "./Button";
@@ -16,12 +17,7 @@ const inputClass =
 type Props = { type: EntryType; onDone: () => void };
 
 function toDatetimeLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const h = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${day}T${h}:${min}`;
+  return format(d, "yyyy-MM-dd'T'HH:mm");
 }
 
 export function EntryForm({ type, onDone }: Props) {
@@ -38,8 +34,8 @@ export function EntryForm({ type, onDone }: Props) {
     try {
       let value: string | undefined = amount.trim() || undefined;
       if (type === "pee") value = "logged";
-      if (type === "sleep_start" || type === "sleep_end") value = undefined;
-      const timestamp = useNow ? undefined : new Date(pickedDateTime);
+      if (type === "sleep_start" || type === "sleep_end" || type === "shower") value = undefined;
+      const timestamp = useNow ? undefined : parseISO(pickedDateTime);
       await addEntry(type, value, timestamp);
       onDone();
     } finally {
@@ -81,6 +77,7 @@ export function EntryForm({ type, onDone }: Props) {
       {(type === "sleep_start" || type === "sleep_end") && (
         <p className="mb-3">{type === "sleep_start" ? "נרדמה" : "התעוררה"}</p>
       )}
+      {type === "shower" && <p className="mb-3">מקלחת</p>}
       <div className="mb-3">
         <p className="mb-1.5 font-semibold text-white">מתי קרה?</p>
         <label className="mb-1.5 flex cursor-pointer items-center gap-2 text-white">

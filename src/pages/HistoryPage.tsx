@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
 import { useEntries, deleteEntry } from "../lib/entries";
 import type { Entry, EntryType } from "../types/entry";
 import { Button } from "../components/Button";
@@ -12,6 +14,7 @@ const typeLabel: Record<string, string> = {
   sleep_start: "נרדמה",
   sleep_end: "התעוררה",
   medicine: "תרופה",
+  shower: "מקלחת",
 };
 
 type FilterType = EntryType | "all" | "sleep" | "sleep_food" | "food_poop";
@@ -21,7 +24,7 @@ function getQueryType(filter: FilterType): EntryType | EntryType[] | undefined {
   if (filter === "sleep") return ["sleep_start", "sleep_end"];
   if (filter === "sleep_food") return ["sleep_start", "sleep_end", "food"];
   if (filter === "food_poop") return ["food", "poop"];
-  return filter;
+  return filter as EntryType;
 }
 
 const FILTERS: { value: FilterType; label: string }[] = [
@@ -33,16 +36,23 @@ const FILTERS: { value: FilterType; label: string }[] = [
   { value: "poop", label: "קקי" },
   { value: "pee", label: "פיפי" },
   { value: "medicine", label: "תרופות" },
+  { value: "shower", label: "מקלחת" },
 ];
 
 const row =
   "flex justify-between items-center gap-3 border-b border-border py-3 last:border-b-0";
 
 export function HistoryPage() {
-  const [filter, setFilter] = useState<FilterType>("all");
+  const navigate = useNavigate({ from: "/history" });
+  const search = useSearch({ strict: false }) as { filter?: string };
+  const filter = ((search?.filter as FilterType) || "all") as FilterType;
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const entries = useEntries({ type: getQueryType(filter) });
+
+  function setFilter(value: FilterType) {
+    navigate({ search: (prev) => ({ ...prev, filter: value }), replace: true });
+  }
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -88,11 +98,8 @@ export function HistoryPage() {
             </span>
             <span className="flex items-center gap-2">
               <span className="text-sm text-muted">
-                {e.timestamp.toLocaleDateString("he-IL")}{" "}
-                {e.timestamp.toLocaleTimeString("he-IL", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {format(e.timestamp, "d.M.yyyy", { locale: he })}{" "}
+                {format(e.timestamp, "HH:mm", { locale: he })}
               </span>
               <Button
                 variant="ghost"
