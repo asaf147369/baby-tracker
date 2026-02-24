@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { addEntry } from "../lib/entries";
-import type { EntryType, PoopAmount } from "../types/entry";
+import type { PoopAmount } from "../types/entry";
 import { Button } from "./Button";
 
 const POOP_OPTIONS: PoopAmount[] = ["small", "medium", "large"];
@@ -9,11 +9,6 @@ const POOP_LABELS: Record<PoopAmount, string> = {
   medium: "בינוני",
   large: "גדול",
 };
-
-const inputClass =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent";
-
-type Props = { type: EntryType; onDone: () => void };
 
 function toDatetimeLocal(d: Date): string {
   const y = d.getFullYear();
@@ -24,23 +19,23 @@ function toDatetimeLocal(d: Date): string {
   return `${y}-${m}-${day}T${h}:${min}`;
 }
 
-export function EntryForm({ type, onDone }: Props) {
-  const [amount, setAmount] = useState("");
+type Props = { onDone: () => void };
+
+export function PeePooForm({ onDone }: Props) {
+  const [poopAmount, setPoopAmount] = useState<PoopAmount>("medium");
   const [loading, setLoading] = useState(false);
   const [useNow, setUseNow] = useState(true);
   const [pickedDateTime, setPickedDateTime] = useState(() =>
-    toDatetimeLocal(new Date()),
+    toDatetimeLocal(new Date())
   );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      let value: string | undefined = amount.trim() || undefined;
-      if (type === "pee") value = "logged";
-      if (type === "sleep_start" || type === "sleep_end") value = undefined;
       const timestamp = useNow ? undefined : new Date(pickedDateTime);
-      await addEntry(type, value, timestamp);
+      await addEntry("pee", "logged", timestamp);
+      await addEntry("poop", poopAmount, timestamp);
       onDone();
     } finally {
       setLoading(false);
@@ -52,35 +47,26 @@ export function EntryForm({ type, onDone }: Props) {
       onSubmit={handleSubmit}
       className="mt-4 rounded-xl border border-border bg-surface pb-3 ps-6 pe-5 pt-4"
     >
-      {type === "food" && (
-        <input
-          type="text"
-          placeholder="כמות (למשל 120 מ״ל)"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className={`${inputClass} mb-2`}
-        />
-      )}
-      {type === "poop" && (
-        <div className="mb-3">
+      <div className="mb-3">
+        <p className="mb-1.5 font-semibold text-white">גודל קקי</p>
+        <div className="flex flex-wrap gap-2">
           {POOP_OPTIONS.map((opt) => (
-            <label key={opt} className="me-4">
+            <label
+              key={opt}
+              className="flex cursor-pointer items-center gap-2 text-white"
+            >
               <input
                 type="radio"
                 name="poop"
                 value={opt}
-                checked={amount === opt}
-                onChange={() => setAmount(opt)}
-              />{" "}
+                checked={poopAmount === opt}
+                onChange={() => setPoopAmount(opt)}
+              />
               {POOP_LABELS[opt]}
             </label>
           ))}
         </div>
-      )}
-      {type === "pee" && <p className="mb-3">נרשם פיפי</p>}
-      {(type === "sleep_start" || type === "sleep_end") && (
-        <p className="mb-3">{type === "sleep_start" ? "נרדמה" : "התעוררה"}</p>
-      )}
+      </div>
       <div className="mb-3">
         <p className="mb-1.5 font-semibold text-white">מתי קרה?</p>
         <label className="mb-1.5 flex cursor-pointer items-center gap-2 text-white">
@@ -100,13 +86,13 @@ export function EntryForm({ type, onDone }: Props) {
             type="datetime-local"
             value={pickedDateTime}
             onChange={(e) => setPickedDateTime(e.target.value)}
-            className={`${inputClass} mt-2 [color-scheme:dark]`}
+            className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent [color-scheme:dark]"
           />
         )}
       </div>
       <div className="mt-3 flex gap-2">
         <Button type="submit" disabled={loading}>
-          שמור
+          {loading ? "..." : "שמור"}
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
           ביטול

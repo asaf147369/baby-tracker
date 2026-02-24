@@ -4,6 +4,7 @@ import {
   addDoc,
   doc,
   deleteDoc,
+  updateDoc,
   query,
   orderBy,
   onSnapshot,
@@ -11,6 +12,7 @@ import {
   limit,
   where,
   type Unsubscribe,
+  type UpdateData,
 } from 'firebase/firestore'
 import { db, auth } from './firebase'
 import type { Entry, EntryType, EntryDoc } from '../types/entry'
@@ -151,4 +153,17 @@ export async function addEntry(type: EntryType, amount?: string, timestamp?: Dat
 export async function deleteEntry(id: string): Promise<void> {
   if (!auth.currentUser) throw new Error('Not authenticated')
   await deleteDoc(doc(db, COLLECTION, id))
+}
+
+export async function updateEntry(
+  id: string,
+  data: { timestamp?: Date; amount?: string }
+): Promise<void> {
+  if (!auth.currentUser) throw new Error('Not authenticated')
+  const ref = doc(db, COLLECTION, id)
+  const updateData: UpdateData<EntryDoc> = {}
+  if (data.timestamp !== undefined)
+    updateData.timestamp = Timestamp.fromDate(data.timestamp)
+  if (data.amount !== undefined) updateData.amount = data.amount
+  await updateDoc(ref, updateData)
 }

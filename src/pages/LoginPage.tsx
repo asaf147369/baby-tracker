@@ -1,45 +1,52 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { auth } from '../lib/firebase'
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth'
+import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { auth } from "../lib/firebase";
+import { Button } from "../components/Button";
+import {
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+} from "firebase/auth";
 
 export function LoginPage() {
-  const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) navigate({ to: '/' })
-    })
-    return () => unsub()
-  }, [navigate])
+      if (user) navigate({ to: "/", search: { tab: undefined } });
+    });
+    return () => unsub();
+  }, [navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password)
-      navigate({ to: '/' })
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate({ to: "/", search: { tab: undefined } });
     } catch (err: unknown) {
-      const message = err && typeof err === 'object' && 'message' in err
-        ? String((err as { message: string }).message)
-        : 'שגיאה'
-      setError(message)
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message: string }).message)
+          : "שגיאה";
+      setError(message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 360, margin: '0 auto' }}>
-      <h1 style={{ marginBlockEnd: 24 }}>התחברות</h1>
+    <div className="mx-auto max-w-[360px] p-6">
+      <h1 className="mb-6">התחברות</h1>
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBlockEnd: 16 }}>
-          <label htmlFor="email" style={{ display: 'block', marginBlockEnd: 4 }}>אימייל</label>
+        <div className="mb-4">
+          <label htmlFor="email" className="mb-1 block">
+            אימייל
+          </label>
           <input
             id="email"
             type="email"
@@ -47,11 +54,13 @@ export function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            style={{ width: '100%', padding: 8 }}
+            className="w-full p-2"
           />
         </div>
-        <div style={{ marginBlockEnd: 16 }}>
-          <label htmlFor="password" style={{ display: 'block', marginBlockEnd: 4 }}>סיסמה</label>
+        <div className="mb-4">
+          <label htmlFor="password" className="mb-1 block">
+            סיסמה
+          </label>
           <input
             id="password"
             type="password"
@@ -59,14 +68,20 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            style={{ width: '100%', padding: 8 }}
+            className="w-full p-2"
           />
         </div>
-        {error && <p style={{ color: 'crimson', marginBlockEnd: 16 }}>{error}</p>}
-        <button type="submit" disabled={loading} style={{ width: '100%', padding: 12 }}>
-          {loading ? '...' : 'כניסה'}
-        </button>
+        {error && (
+          <p className="mb-4 text-[crimson]">{error}</p>
+        )}
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full"
+        >
+          {loading ? "..." : "כניסה"}
+        </Button>
       </form>
     </div>
-  )
+  );
 }

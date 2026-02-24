@@ -8,6 +8,11 @@ function getTabFromSearch(search: unknown): string | undefined {
   return undefined;
 }
 
+const navLink =
+  "flex flex-1 items-center justify-center rounded-xl px-2 py-3 text-[0.95rem] no-underline transition-[background,color] duration-150";
+const navLinkInactive = "text-muted hover:bg-surface-hover hover:text-white";
+const navLinkActive = "bg-border font-semibold text-white";
+
 export function BottomNav() {
   const { location } = useRouterState();
   const pathname = location.pathname;
@@ -18,32 +23,36 @@ export function BottomNav() {
   const isChart = pathname === "/sleep-chart";
 
   return (
-    <nav className="bottom-nav" role="navigation" aria-label="ניווט ראשי">
+    <nav
+      className="fixed bottom-0 left-1/2 z-[100] flex w-full max-w-[480px] -translate-x-1/2 rounded-t-[20px] border border-b-0 border-border bg-surface p-2.5 pb-[max(10px,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(0,0,0,0.4)]"
+      role="navigation"
+      aria-label="ניווט ראשי"
+    >
       <Link
         to="/"
         search={{ tab: undefined }}
-        className={`bottom-nav-item ${isAdd ? "bottom-nav-item-active" : ""}`}
+        className={`${navLink} ${isAdd ? navLinkActive : navLinkInactive}`}
       >
-        <span className="bottom-nav-label">הוסף</span>
+        <span className="text-inherit">הוסף</span>
       </Link>
       <Link
         to="/"
         search={{ tab: "info" }}
-        className={`bottom-nav-item ${isInfo ? "bottom-nav-item-active" : ""}`}
+        className={`${navLink} ${isInfo ? navLinkActive : navLinkInactive}`}
       >
-        <span className="bottom-nav-label">מידע</span>
+        <span className="text-inherit">מידע</span>
       </Link>
       <Link
         to="/history"
-        className={`bottom-nav-item ${isHistory ? "bottom-nav-item-active" : ""}`}
+        className={`${navLink} ${isHistory ? navLinkActive : navLinkInactive}`}
       >
-        <span className="bottom-nav-label">היסטוריה</span>
+        <span className="text-inherit">היסטוריה</span>
       </Link>
       <Link
         to="/sleep-chart"
-        className={`bottom-nav-item ${isChart ? "bottom-nav-item-active" : ""}`}
+        className={`${navLink} ${isChart ? navLinkActive : navLinkInactive}`}
       >
-        <span className="bottom-nav-label">גרף</span>
+        <span className="text-inherit">גרף</span>
       </Link>
     </nav>
   );
